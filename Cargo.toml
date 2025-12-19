@@ -1,0 +1,14 @@
+[package]
+name = "netgauge"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+libc = "0.2"
+snmp2 = "0.4"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.54", features = [
+    "Win32_Foundation",
+    "Win32_NetworkManagement_IpHelper",
+] }
