@@ -1,2 +1,5 @@
 /target
 Cargo.lock
+.DS_Store
+/netgauge-gui/target
+/netgauge-gui/Cargo.lock

@@ -1,5 +1,7 @@
+#[cfg(target_os = "windows")]
+use crate::net::net::InterfaceSet;
 use crate::net::net::{InterfaceStats, InterfaceType};
-use std::collections::HashSet;
+
 use windows::{
     Win32::Foundation::ERROR_SUCCESS,
     Win32::NetworkManagement::IpHelper::{GetIfTable2, MIB_IF_TABLE2},
@@ -12,20 +14,20 @@ pub fn fetch_net_stats(selected: &InterfaceSet) -> Vec<InterfaceStats> {
     unsafe {
         let mut table: *mut MIB_IF_TABLE2 = std::ptr::null_mut();
 
-        if GetIfTable2(&mut table) != ERROR_SUCCESS.0 || table.is_null() {
+        if GetIfTable2(&mut table) != ERROR_SUCCESS || table.is_null() {
             return results; // empty vec on failure (same semantics as macOS)
         }
 
         let table_ref = &*table;
+        let table_ptr = table_ref.Table.as_ptr();
 
         for i in 0..table_ref.NumEntries {
-            let row = &*table_ref.Table.offset(i as isize);
+            let row = &*table_ptr.add(i as usize);
 
             let name = String::from_utf16_lossy(&row.Alias)
                 .trim_end_matches('\0')
                 .to_string();
 
-            // If selected set is empty → collect all
             if !selected.is_empty() && !selected.contains(&name) {
                 continue;
             }
@@ -35,7 +37,6 @@ pub fn fetch_net_stats(selected: &InterfaceSet) -> Vec<InterfaceStats> {
                 rx_bytes: row.InOctets,
                 tx_bytes: row.OutOctets,
                 kind: InterfaceType::Net,
-                snmp_available: false, // Windows local stats
             });
         }
     }

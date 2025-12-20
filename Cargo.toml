@@ -3,6 +3,14 @@ name = "netgauge"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+name = "netgauge"
+path = "src/lib.rs"
+
+[[bin]]
+name = "netgauge"
+path = "src/main.rs"
+
 [dependencies]
 libc = "0.2"
 snmp2 = "0.4"
@@ -11,4 +19,5 @@ snmp2 = "0.4"
 windows = { version = "0.54", features = [
     "Win32_Foundation",
     "Win32_NetworkManagement_IpHelper",
+    "Win32_NetworkManagement_Ndis",
 ] }

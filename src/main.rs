@@ -7,7 +7,7 @@ use std::thread::sleep;
 use std::time::Duration;
 
 fn main() {
-    let selected: HashSet<String> = ["eth0", "wlan0", "en0"]
+    let selected: HashSet<String> = ["eth0", "wlan0", "en0", "Wi-Fi"]
         .iter()
         .map(|s| s.to_string())
         .collect();
