@@ -44,30 +44,8 @@ jobs:
           name: netgauge-gui-macos
           path: netgauge-gui/target/release/netgauge-gui
 
-  build-linux:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev
-          
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Build GUI (Release)
-        run: cargo build --release --manifest-path netgauge-gui/Cargo.toml
-
-      - name: Upload Linux artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: netgauge-gui-linux
-          path: netgauge-gui/target/release/netgauge-gui
-
   release:
-    needs: [build-windows, build-macos, build-linux]
+    needs: [build-windows, build-macos]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
@@ -75,19 +53,17 @@ jobs:
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
-        
+
       - name: Prepare release files
         run: |
           mv netgauge-gui-windows/netgauge-gui.exe netgauge-gui-windows.exe
           mv netgauge-gui-macos/netgauge-gui netgauge-gui-macos
-          mv netgauge-gui-linux/netgauge-gui netgauge-gui-linux
-          
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             netgauge-gui-windows.exe
             netgauge-gui-macos
-            netgauge-gui-linux
           generate_release_notes: true
 
