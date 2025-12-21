@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Install Rust
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@stable
         
       - name: Build GUI (Release)
         run: cargo build --release --manifest-path netgauge-gui/Cargo.toml
@@ -33,11 +33,11 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Install Rust
-        uses: dtolnay/rust-action@stable
-        
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Build GUI (Release)
         run: cargo build --release --manifest-path netgauge-gui/Cargo.toml
-        
+
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
@@ -55,11 +55,11 @@ jobs:
           sudo apt-get install -y libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev
           
       - name: Install Rust
-        uses: dtolnay/rust-action@stable
-        
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Build GUI (Release)
         run: cargo build --release --manifest-path netgauge-gui/Cargo.toml
-        
+
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
         with:
