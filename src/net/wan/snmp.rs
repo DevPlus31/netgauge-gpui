@@ -66,3 +66,36 @@ pub fn is_snmp_available(target: &str, community: &[u8]) -> bool {
         Err(_) => false, // SNMP get failed
     }
 }
+
+/// Auto-detect interface index by name (e.g., "ppp0")
+/// Returns Some((index, full_name)) if found, None otherwise
+pub fn detect_interface_index(target: &str, community: &[u8], name_pattern: &str) -> Option<(u32, String)> {
+    let timeout = std::time::Duration::from_secs(2);
+
+    let mut sess = match SyncSession::new_v2c(target, community, Some(timeout), 0) {
+        Ok(s) => s,
+        Err(_) => return None,
+    };
+
+    // Search through interface indexes 1-100
+    for idx in 1u64..=100 {
+        let descr_oid = Oid::from(&[1, 3, 6, 1, 2, 1, 2, 2, 1, 2, idx]).unwrap();
+
+        let name = match sess.get(&descr_oid) {
+            Ok(resp) => match resp.varbinds.into_iter().next() {
+                Some((_, Value::OctetString(bytes))) => {
+                    String::from_utf8_lossy(&bytes).to_string()
+                }
+                _ => continue,
+            },
+            Err(_) => continue,
+        };
+
+        // Check if interface name contains the pattern (case-insensitive)
+        if name.to_lowercase().contains(&name_pattern.to_lowercase()) {
+            return Some((idx as u32, name));
+        }
+    }
+
+    None
+}

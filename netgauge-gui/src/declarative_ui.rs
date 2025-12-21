@@ -4,6 +4,9 @@ use std::sync::Arc;
 
 pub type OnClickFn = Arc<dyn Fn(&mut dyn std::any::Any) + Send + Sync>;
 
+/// Callback for rendering list items: (index) -> Element
+pub type ListItemRenderer = Arc<dyn Fn(usize) -> Element + Send + Sync>;
+
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum Color {
@@ -18,6 +21,7 @@ pub enum Style {
     Flex,
     FlexCol,
     FlexRow,
+    FlexGrow,
     JustifyCenter,
     JustifyBetween,
     ItemsCenter,
@@ -31,6 +35,25 @@ pub enum Style {
     TextColor(Color),
     TextSize(f32),
     FontWeightBold,
+    CursorPointer,
+}
+
+/// Configuration for a uniform_list element
+#[allow(dead_code)]
+pub struct ListConfig {
+    pub id: String,
+    pub item_count: usize,
+    pub item_renderer: ListItemRenderer,
+}
+
+impl Clone for ListConfig {
+    fn clone(&self) -> Self {
+        Self {
+            id: self.id.clone(),
+            item_count: self.item_count,
+            item_renderer: self.item_renderer.clone(),
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -41,6 +64,7 @@ pub struct Element {
     pub content: Option<String>,
     pub id: Option<String>,
     pub on_click: Option<OnClickFn>,
+    pub list_config: Option<ListConfig>,
 }
 
 impl Clone for Element {
@@ -52,6 +76,7 @@ impl Clone for Element {
             content: self.content.clone(),
             id: self.id.clone(),
             on_click: self.on_click.clone(),
+            list_config: self.list_config.clone(),
         }
     }
 }
@@ -65,7 +90,17 @@ impl Element {
             content: None,
             id: None,
             on_click: None,
+            list_config: None,
         }
+    }
+
+    pub fn as_list(mut self, id: impl Into<String>, count: usize, renderer: ListItemRenderer) -> Self {
+        self.list_config = Some(ListConfig {
+            id: id.into(),
+            item_count: count,
+            item_renderer: renderer,
+        });
+        self
     }
 
     pub fn style(mut self, style: Style) -> Self {
@@ -156,6 +191,9 @@ pub fn parse_styles(input: &str) -> Vec<Style> {
                 "text-sm" => Some(Style::TextSize(14.0)),
                 "text-xs" => Some(Style::TextSize(12.0)),
                 "text-2xl" => Some(Style::TextSize(24.0)),
+                "cursor-pointer" => Some(Style::CursorPointer),
+                "text-blue" => Some(Style::TextColor(Color::Hex(0x4a90e2))),
+                "flex-grow" => Some(Style::FlexGrow),
                 _ => None,
             }
         })
@@ -170,6 +208,11 @@ pub fn col() -> Element { Element::new("div").style(Style::FlexCol) }
 pub fn text(content: impl Into<String>) -> Element { Element::new("text").content(content) }
 pub fn box_elem(size: f32, color: Color) -> Element {
     Element::new("div").style(Style::Size(size)).style(Style::Background(color))
+}
+
+/// Create a list element that will be rendered as uniform_list
+pub fn list(id: impl Into<String>, count: usize, renderer: impl Fn(usize) -> Element + Send + Sync + 'static) -> Element {
+    Element::new("list").as_list(id, count, Arc::new(renderer))
 }
 
 // Macros
@@ -264,6 +307,12 @@ macro_rules! jsx {
 
 #[macro_export]
 macro_rules! jsx_tag {
+    // div with class and onclick
+    ( <div class={ $styles:expr } onclick={ $handler:expr } /> ) => {
+        $crate::declarative_ui::div()
+            .styles($crate::declarative_ui::parse_styles($styles))
+            .on_click($handler)
+    };
     ( <div class={ $($styles:tt)* } /> ) => { $crate::declarative_ui::div().styles($crate::declarative_ui::parse_styles($($styles)*)) };
     ( <div /> ) => { $crate::declarative_ui::div() };
     ( <row gap={ $($gap:tt)* } /> ) => { $crate::declarative_ui::row().style($crate::declarative_ui::Style::Gap($($gap)*)) };
@@ -272,6 +321,15 @@ macro_rules! jsx_tag {
     ( <col /> ) => { $crate::declarative_ui::col() };
     ( <box size={ $($size:tt)* } color={ $($color:tt)* } /> ) => { $crate::declarative_ui::box_elem($($size)*, $($color)*) };
     ( <text /> ) => { $crate::declarative_ui::text("") };
+    // list with id, count, class and renderer
+    ( <list id={ $id:expr } count={ $count:expr } class={ $styles:expr } render={ $renderer:expr } /> ) => {
+        $crate::declarative_ui::list($id, $count, $renderer)
+            .styles($crate::declarative_ui::parse_styles($styles))
+    };
+    // list with id, count and renderer (no styles)
+    ( <list id={ $id:expr } count={ $count:expr } render={ $renderer:expr } /> ) => {
+        $crate::declarative_ui::list($id, $count, $renderer)
+    };
 }
 
 #[macro_export]

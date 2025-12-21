@@ -1,7 +1,7 @@
 use crate::net::net::{InterfaceSet, InterfaceStats};
 
 use libc::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ffi::CStr;
 
 #[cfg(target_os = "macos")]
@@ -42,5 +42,38 @@ pub fn fetch_net_stats(selected: &InterfaceSet) -> Vec<InterfaceStats> {
                 kind: super::net::InterfaceType::Net,
             })
             .collect()
+    }
+}
+
+/// List all available network interface names
+#[cfg(target_os = "macos")]
+pub fn list_interfaces() -> Vec<String> {
+    unsafe {
+        let mut ifap: *mut ifaddrs = std::ptr::null_mut();
+        if getifaddrs(&mut ifap) != 0 {
+            return vec![];
+        }
+
+        let mut names: HashSet<String> = HashSet::new();
+        let mut cur = ifap;
+
+        while !cur.is_null() {
+            let ifa = &*cur;
+
+            if !ifa.ifa_data.is_null() {
+                let name = CStr::from_ptr(ifa.ifa_name).to_string_lossy().into_owned();
+                if !name.is_empty() {
+                    names.insert(name);
+                }
+            }
+
+            cur = ifa.ifa_next;
+        }
+
+        freeifaddrs(ifap);
+
+        let mut result: Vec<String> = names.into_iter().collect();
+        result.sort();
+        result
     }
 }

@@ -46,3 +46,28 @@ pub fn fetch_net_stats(selected: &InterfaceSet) -> Vec<InterfaceStats> {
 
     stats
 }
+
+/// List all available network interface names
+pub fn list_interfaces() -> Vec<String> {
+    let mut names = Vec::new();
+
+    let content = match read_to_string("/proc/net/dev") {
+        Ok(c) => c,
+        Err(_) => return names,
+    };
+
+    for line in content.lines().skip(2) {
+        let line = line.trim();
+        let mut parts = line.split(':');
+
+        if let Some(iface) = parts.next() {
+            let name = iface.trim().to_string();
+            if !name.is_empty() {
+                names.push(name);
+            }
+        }
+    }
+
+    names.sort();
+    names
+}

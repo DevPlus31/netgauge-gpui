@@ -43,3 +43,34 @@ pub fn fetch_net_stats(selected: &InterfaceSet) -> Vec<InterfaceStats> {
 
     results
 }
+
+/// List all available network interface names
+#[cfg(target_os = "windows")]
+pub fn list_interfaces() -> Vec<String> {
+    let mut names = Vec::new();
+
+    unsafe {
+        let mut table: *mut MIB_IF_TABLE2 = std::ptr::null_mut();
+
+        if GetIfTable2(&mut table) != ERROR_SUCCESS || table.is_null() {
+            return names;
+        }
+
+        let table_ref = &*table;
+        let table_ptr = table_ref.Table.as_ptr();
+
+        for i in 0..table_ref.NumEntries {
+            let row = &*table_ptr.add(i as usize);
+
+            let name = String::from_utf16_lossy(&row.Alias)
+                .trim_end_matches('\0')
+                .to_string();
+
+            if !name.is_empty() {
+                names.push(name);
+            }
+        }
+    }
+
+    names
+}

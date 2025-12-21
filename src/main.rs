@@ -20,7 +20,7 @@ fn main() {
         let mut all_stats = net_stats;
 
         if snmp_ok {
-            let wan_stats = fetch_wan_stats("192.168.1.1:161", b"public", 26, "WAN");
+            let wan_stats = fetch_wan_stats("192.168.1.1:161", b"public", 42, "ppp0 (WAN)");
             all_stats.push(wan_stats);
         } else {
             println!("SNMP unavailable!");
