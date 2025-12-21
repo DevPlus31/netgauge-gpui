@@ -140,11 +140,17 @@ if is_snmp_available(target, community) {
 ### CLI Usage
 
 ```bash
-# Run the CLI monitor
+# Real-time bandwidth monitor
 cargo run
 
 # Discover SNMP interfaces on your router
 cargo run --bin snmp_discover
+
+# Build release binary
+cargo build --release
+
+# Run release binary directly
+./target/release/netgauge
 ```
 
 ---
